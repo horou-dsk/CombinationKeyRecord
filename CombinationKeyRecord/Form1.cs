@@ -46,87 +46,107 @@ namespace CombinationKeyRecord
             m_hook.MouseWheelEvent += mh_MouseWheelEvent;
             //程序退出事件
             Application.ApplicationExit += new EventHandler(AppExitEvent);
-            SystemEvents.SessionEnded += new SessionEndedEventHandler(AppExitEvent);
+            SystemEvents.SessionEnded += new SessionEndedEventHandler(AppOnExit);
+            // 给托盘右键菜单添加事件
+            退出应用ToolStripMenuItem.Click += new EventHandler(AppOnExit);
+            写入LogToolStripMenuItem.Click += new EventHandler(WriteLog);
         }
 
         private void hook_KeyDown(object sender, KeyEventArgs e)
         {
-            if(e.KeyCode == Keys.LControlKey && !ctrlbool  && !RunningFullScreenApp)
-            {
-                ctrlbool = true;
-                Visible = true;
-                TopLevel = true;
-                TopMost = true;
-                SetPenetrate();
-                Opacity = 0.5;
-                //SetBitmap(new Bitmap(BackgroundImage), 120);
-                Location = point;
-            }
+            Console.WriteLine(e.KeyData.ToString());
+            logList.Add("[" + DateTime.Now.ToString() + " -> KeyDown -> " + e.KeyData.ToString() +"]\t");
+            //if(e.KeyCode == Keys.LControlKey && !ctrlbool  && !RunningFullScreenApp)
+            //{
+            //    ctrlbool = true;
+            //    Visible = true;
+            //    TopLevel = true;
+            //    TopMost = true;
+            //    SetPenetrate();
+            //    Opacity = 0.5;
+            //    //SetBitmap(new Bitmap(BackgroundImage), 120);
+            //    Location = point;
+            //}
         }
 
         private void hook_KeyUp(object sender, KeyEventArgs e)
         {
-            //Console.WriteLine(Control.ModifierKeys == Keys.Control);
-            Keys k = Control.ModifierKeys;
-            if(ctrlbool && (e.KeyCode == Keys.LControlKey || k == Keys.Shift || k == Keys.Alt))
+            logList.Add("[" + DateTime.Now.ToString() + " -> KeyUp -> " + e.KeyData.ToString() + "]\t");
+            if(logList.Count > 500)
             {
-                ctrlbool = false;
-                Visible = false;
-                TopLevel = false;
-                isContinuity = false;
-                if(logList.Count > 15)
-                {
-                    WriteLog();
-                }
+                WriteLog();
             }
+            //Console.WriteLine(Control.ModifierKeys == Keys.Control);
+            //Keys k = Control.ModifierKeys;
+            //if(ctrlbool && (e.KeyCode == Keys.LControlKey || k == Keys.Shift || k == Keys.Alt))
+            //{
+            //    ctrlbool = false;
+            //    Visible = false;
+            //    TopLevel = false;
+            //    isContinuity = false;
+            //    if(logList.Count > 15)
+            //    {
+            //        WriteLog();
+            //    }
+            //}
         }
 
         private void mh_MouseDownEvent(object sender, MouseEventArgs e)
         {
-            if (ctrlbool)
-            {
-                if(e.Button == MouseButtons.Left)
-                {
-                    logList.Add("ctrl + 鼠标左键 -- 时间：" + DateTime.Now.ToString() + "  "+isContinuity);
-                }
-                if(e.Button == MouseButtons.Right)
-                {
-                    logList.Add("ctrl + 鼠标右键 -- 时间：" + DateTime.Now.ToString() + "  "+isContinuity);
-                }
-                if (!isContinuity) isContinuity = true;
-            }
+            //if (ctrlbool)
+            //{
+            //    if(e.Button == MouseButtons.Left)
+            //    {
+            //        logList.Add("ctrl + 鼠标左键 -- 时间：" + DateTime.Now.ToString() + "  "+isContinuity);
+            //    }
+            //    if(e.Button == MouseButtons.Right)
+            //    {
+            //        logList.Add("ctrl + 鼠标右键 -- 时间：" + DateTime.Now.ToString() + "  "+isContinuity);
+            //    }
+            //    if (!isContinuity) isContinuity = true;
+            //}
         }
 
         private void mh_MouseUpEvent(object sender, MouseEventArgs e) { }
 
         private void mh_MouseWheelEvent(object sender, MouseEventArgs e)
         {
-            if (ctrlbool)
-            {
-                if (e.Delta > 0)
-                {
-                    logList.Add("ctrl + 鼠标滚轮上 -- 时间：" + DateTime.Now.ToString() + "  " + isContinuity);
-                }
-                else
-                {
-                    logList.Add("ctrl + 鼠标滚轮下 -- 时间：" + DateTime.Now.ToString() + "  " + isContinuity);
-                }
-                if (!isContinuity) isContinuity = true;
-            }
+            //if (ctrlbool)
+            //{
+            //    if (e.Delta > 0)
+            //    {
+            //        logList.Add("ctrl + 鼠标滚轮上 -- 时间：" + DateTime.Now.ToString() + "  " + isContinuity);
+            //    }
+            //    else
+            //    {
+            //        logList.Add("ctrl + 鼠标滚轮下 -- 时间：" + DateTime.Now.ToString() + "  " + isContinuity);
+            //    }
+            //    if (!isContinuity) isContinuity = true;
+            //}
         }
 
         private void WriteLog()
         {
-            FileStream logFile = new FileStream("D:\\Backup\\Log\\CombinationKeyRecord\\log.txt",FileMode.Append);
+            FileStream logFile = new FileStream("D:\\Backup\\Log\\CombinationKeyRecord\\log.txt", FileMode.Append);
 
             StreamWriter sw = new StreamWriter(logFile);
 
+            int index = 0; String row = "";
+
             foreach(String log in logList)
             {
-                sw.WriteLine(log);
-                sw.WriteLine(sw.NewLine);
+                index++;
+                row += log;
+                if(index == 3)
+                {
+                    sw.WriteLine(row);
+                    index = 0;
+                    row = "";
+                }
+                // 写入换行符
+                // sw.WriteLine(sw.NewLine);
             }
-
+            if (index != 0) sw.WriteLine(row);
             sw.Flush();
             logFile.Flush();
             sw.Close();
@@ -135,14 +155,25 @@ namespace CombinationKeyRecord
 
         }
 
+        private void WriteLog(object sender, EventArgs e)
+        {
+            WriteLog();
+        }
+
         private void AppExitEvent(object sender, EventArgs e)
         {
             //Console.WriteLine("程序退出！！");
             RegisterAppBar(true);
-            SystemEvents.SessionEnded -= new SessionEndedEventHandler(AppExitEvent);
+            SystemEvents.SessionEnded -= new SessionEndedEventHandler(AppOnExit);
             k_hook.Stop();
             m_hook.UnHook();
             WriteLog();
+            notifyIcon1.Dispose();
+        }
+
+        private void AppOnExit(object sender, EventArgs e) {
+            AppExitEvent(sender, e);
+            this.Close();
         }
 
         //声明常量：(释义可参见windows API)  
@@ -256,6 +287,7 @@ namespace CombinationKeyRecord
         private IntPtr shellHandle;
         int uCallBackMsg;
 
+        // 注册AppBar 这样系统会在有全屏应用运行时会向我们发送消息
         private void RegisterAppBar(bool registered)
         {
             APPBARDATA abd = new APPBARDATA();
@@ -306,6 +338,11 @@ namespace CombinationKeyRecord
                 }
             }
             base.WndProc(ref m);
+        }
+
+        private void contextMenuStrip1_Opening(object sender, CancelEventArgs e)
+        {
+            Console.WriteLine("打开右键菜单");
         }
         //protected override CreateParams CreateParams
         //{
